@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}<title>{{ room.name }}</title>{% endblock %}
+{% block content %}
+<p></p>Host - {{ room.host }}</p>
+<p>Room name - {{ room.name }}</p>
+<p>Room topic - {{ room.topic }}</p>
+<p>Description - {{ room.description }}</p>
+<p>Created - {{ room.created }}</p>
+<p>Updated - {{ room.updated }}</p>
+<a href="{% url 'update-room' room.id %}">Update room</a>
+<a href="{% url 'delete-room' room.pk %}">Delete room</a>
+{% endblock %}
