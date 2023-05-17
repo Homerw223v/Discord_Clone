@@ -54,6 +54,18 @@ def register_user(requset):
         'form': form,
     })
 
+def user_profile(request, pk):
+    user = User.objects.get(username=pk)
+    rooms = user.room_set.all()
+    r_messages = user.message_set.all()
+    topics = Topic.objects.all()
+    return render(request, 'base/profile.html', context={
+        'user': user,
+        'rooms': rooms,
+        'r_messages': r_messages,
+        'topics': topics,
+
+    })
 
 def home(request):
     if request.GET.get('q'):
@@ -67,10 +79,12 @@ def home(request):
     )
     topics = Topic.objects.all()
     room_count = rooms.count()
+    r_messages = Message.objects.all().filter(Q(room__topic__name__icontains=q))
     return render(request, 'base/home-page.html', context={
         'rooms': rooms,
         'topics': topics,
         'rooms_count': room_count,
+        'r_messages': r_messages,
     })
 
 
@@ -99,6 +113,8 @@ def create_room(request):
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
+            room = form.save(commit=False)
+            room.host = request.user
             form.save()
             return redirect('home')
 
@@ -130,7 +146,7 @@ def delete_room(request, pk):
         return HttpResponse('You are not allowed here!')
     if request.method == 'POST':
         room.delete()
-        return redirect(room)
+        return redirect('home')
     return render(request, 'base/delete.html', context={
         'obj': room,
     })
