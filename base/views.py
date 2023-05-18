@@ -2,12 +2,10 @@ from django.shortcuts import render, redirect
 from django.db.models import Q
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from .models import Room, Topic, Message
-from django.contrib.auth.models import User
+from .models import Room, Topic, Message, UserModel
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.contrib.auth.forms import UserCreationForm
-from .forms import RoomForm
+from .forms import RoomForm, UserFormCreation, UserProfileUpdate
 
 
 # Create your views here.
@@ -16,13 +14,13 @@ def login_page(request):
     if request.user.is_authenticated:
         return redirect('home')
     if request.method == "POST":
-        username = request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
         try:
-            user = User.objects.get(username=username)
+            user = UserModel.objects.get(email=email)
         except:
             messages.error(request, 'User does not exist')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email, password=password)
         if user is not None:
             login(request, user)
             return redirect('home')
@@ -36,24 +34,24 @@ def logout_user(request):
     return render(request, 'login_register/logout.html')
 
 
-def register_user(requset):
-    form = UserCreationForm()
-    if requset.method == 'POST':
-        form = UserCreationForm(requset.POST)
+def register_user(request):
+    form = UserFormCreation()
+    if request.method == 'POST':
+        form = UserFormCreation(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(requset, f'User {requset.POST.get("username")} was created!')
-            return redirect('login')
+            messages.success(request, f'User {request.POST.get("username")} was created!')
+            return redirect('user-profile', request.POST.get('username'))
         else:
-            messages.error(requset, 'An error occurred during registration')
+            messages.error(request, 'An error occurred during registration')
 
-    return render(requset, 'login_register/register.html', context={
+    return render(request, 'login_register/register.html', context={
         'form': form,
     })
 
-
+@login_required(login_url='login')
 def user_profile(request, pk):
-    user = User.objects.get(username=pk)
+    user = UserModel.objects.get(username=pk)
     rooms = user.room_set.all()
     r_messages = user.message_set.all()
     topics = Topic.objects.all()
@@ -66,6 +64,21 @@ def user_profile(request, pk):
     })
 
 
+@login_required(login_url='login')
+def update_profile(request):
+    form = UserProfileUpdate(instance=request.user)
+    if request.method == 'POST':
+        form = UserProfileUpdate(request.POST,
+                                 request.FILES,
+                                 instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('user-profile', request.user)
+    return render(request, 'base/update_profile.html', context={
+        'form': form
+    })
+
+@login_required(login_url='/login')
 def home(request):
     if request.GET.get('q'):
         q = request.GET.get('q')
@@ -76,6 +89,11 @@ def home(request):
         Q(name__icontains=q) |
         Q(description__icontains=q)
     )
+    one_topic = 'All'
+    try:
+        one_topic = Topic.objects.get(name__icontains=q)
+    except Exception:
+        pass
     topics = Topic.objects.all()
     room_count = rooms.count()
     r_messages = Message.objects.all().filter(Q(room__topic__name__icontains=q))
@@ -84,9 +102,10 @@ def home(request):
         'topics': topics,
         'rooms_count': room_count,
         'r_messages': r_messages,
+        'one_topic': one_topic
     })
 
-
+@login_required(login_url='/login')
 def room(request, pk):
     room = Room.objects.get(id=pk)
     room_messages = room.message_set.all().order_by('-created')  # Get messages specific only for this room
@@ -111,15 +130,19 @@ def create_room(request):
     form = RoomForm()
     topics = Topic.objects.all()
     if request.method == 'POST':
+        user = UserModel.objects.get(username=request.user)
         topics = request.POST.get('topic')
         topic_name = request.POST.get('topic')
         topic, created = Topic.objects.get_or_create(name=topic_name)
-        Room.objects.create(
+        a = Room.objects.create(
             host=request.user,
             topic=topic,
             name=request.POST.get('name'),
             description=request.POST.get('description')
         )
+        a.participants.add(user)
+        a.save()
+
         # form = RoomForm(request.POST)
         # if form.is_valid():
         #     room = form.save(commit=False)

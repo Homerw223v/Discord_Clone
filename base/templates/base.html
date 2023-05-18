@@ -14,11 +14,14 @@
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
-    <li>{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% if message.tags %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% else %}
+        <li>{{ message }}</li>
+        {% endif %}
     {% endfor %}
 </ul>
 {% endif %}
 {% block content %}{% endblock %}
-<script src="{% static 'js/script.js' %}"></script>
 </body>
 </html>

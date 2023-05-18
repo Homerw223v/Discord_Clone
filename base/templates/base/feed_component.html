@@ -3,7 +3,7 @@
     <div class="roomListRoom__header">
         <a href="{% url 'user-profile' room.host %}" class="roomListRoom__author">
             <div class="avatar avatar--small">
-                <img src="{{ room.host.avatar.url }}" />
+                <img src="{{ room.host.profile_image.url }}" />
             </div>
             <span>@{{ room.host.username }}</span>
         </a>
@@ -33,7 +33,7 @@
             </svg>
             {{ room.participants.all.count }} Joined
         </a>
-        <p class="roomListRoom__topic">{{ room.topic.name }}</p>
+        <a href="{% url 'room' room.id %}"><p class="roomListRoom__topic">{{ room.topic.name }}</p></a>
     </div>
 </div>
 {% endfor %}

@@ -54,13 +54,14 @@
         <div class="room__header scroll">
           <div class="room__info">
             <h3>{{room.name}}</h3>
+            <h3 align="center"><span class="room__topics">Topic: {{ room.topic }}</span></h3>
             <span>{{ room.created|timesince }} ago</span>
           </div>
           <div class="room__hosted">
             <p>Hosted By</p>
             <a href="{% url 'user-profile' room.host %}" class="room__author">
               <div class="avatar avatar--small">
-                <img src="" />
+                <img src="{{ room.host.profile_image.url }}" />
               </div>
               <span>@{{ room.host.username }}</span>
             </a>
@@ -70,7 +71,6 @@
             rerum consectetur, voluptatem repudiandae eum ea porro cupiditate provident nulla, deserunt, ab ipsum
             corporis laboriosam deleniti molestias?
           </div> -->
-          <span class="room__topics">{{ room.topic }}</span>
         </div>
 
         <div class="room__conversation">
@@ -83,14 +83,14 @@
                 <div class="thread__author">
                   <a href="{% url 'user-profile' r_message.user %}" class="thread__authorInfo">
                     <div class="avatar avatar--small">
-                      <img src="" />
+                      <img src="{{ r_message.user.profile_image.url }}" />
                     </div>
                     <span>@{{ r_message.user.username }}</span>
                   </a>
                   <span class="thread__date">{{ r_message.created|timesince}} ago</span>
                 </div>
 
-                {% if user == r_message.user %}
+                {% if user.username == r_message.user %}
                 <a href="{% url 'delete-message' r_message.id %}">
                   <div class="thread__delete">
                     <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
@@ -104,7 +104,7 @@
                 {% endif %}
               </div>
               <div class="thread__details">
-                {{ message.body }}
+                {{ r_message.body }}
               </div>
             </div>
             {% endfor %}
@@ -128,10 +128,11 @@
         {% for user in participants %}
         <a href="{%  url 'user-profile' user %}" class="participant">
           <div class="avatar avatar--medium">
-            <img src="" />
+            <img src="{{ user.profile_image.url }}" />
           </div>
-          <p>
+          <p>{% if user.name != None %}
             {{ user.name }}
+            {% endif %}
             <span>@{{ user.username }}</span>
           </p>
         </a>
@@ -141,5 +142,4 @@
     <!--  End -->
   </div>
 </main>
-<script src="script.js"></script>
 {% endblock content %}
