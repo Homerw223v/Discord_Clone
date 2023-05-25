@@ -32,7 +32,7 @@
       <div class="roomList__header">
         <div>
           <h2>Study Rooms</h2>
-          <p>{{ rooms_count }} Rooms available</p>
+          <p>{{ rooms.count }} Rooms available</p>
         </div>
 
         <a class="btn btn--main" href="{% url 'create-room' %}">
@@ -45,9 +45,7 @@
           Create Room
         </a>
       </div>
-      {% if one_topic %}
-      <h1 align="center">{{ one_topic }}</h1>
-      {% endif %}
+
 
       {% include 'base/feed_component.html' %}
 

@@ -20,11 +20,11 @@
 
 
             <!-- Logged In -->
-            {% if user.is_authenticated %}
+            {% if request.user.is_authenticated %}
             <div class="header__user">
-                <a href=" {% url 'user-profile' user.username %}">
+                <a href=" {% url 'user-profile' request.user.username %}">
                     <div class="avatar avatar--medium active">
-                        <img src="{{ user.profile_image.url }}" />
+                        <img src="{{ profile.profile_image.url }}" />
                     </div>
                     <p>{{ user.username }} <span>@{{ user.username }}</span></p>
                 </a>

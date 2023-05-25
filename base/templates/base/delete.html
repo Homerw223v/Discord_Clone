@@ -26,8 +26,10 @@
                     </div>
 
                     <div class="for__group">
-                        <input class="btn btn--main" type="submit" value="Confirm" />
+                        <a href="{{ request.META.HTTP_REFERER }}"><input class="btn btn--main" type="submit" value="Confirm"  /></a>
+                        <a class="btn btn--main" href="{{ request.META.HTTP_REFERER }}">Cancel</a>
                     </div>
+
 
                 </form>
             </div>
