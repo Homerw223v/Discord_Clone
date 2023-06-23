@@ -1,14 +1,14 @@
 from django.contrib.auth.models import User
-
 from .models import Room, Profile
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 
-class UserUpdate(forms.ModelForm):
 
+class UserUpdate(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email']
+
 
 class ProfileUpdate(forms.ModelForm):
     class Meta:

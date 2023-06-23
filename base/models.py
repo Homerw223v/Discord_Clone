@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
@@ -18,6 +17,7 @@ class Profile(models.Model):
 
     def get_absolute_url(self):
         return reverse('user-profile', args=[str(self.user)])
+
 
 class Topic(models.Model):
     name = models.CharField(max_length=200)

@@ -1,26 +1,16 @@
-from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, DeleteView
+from django.views.generic import DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Room, Topic, Message, Profile
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import RoomForm, UserFormCreation, ProfileUpdate, UserUpdate
+from django.db.models import ObjectDoesNotExist
 
-
-# class RoomList(DetailView):
-#     model = Room
-#     template_name = 'base/room.html'
-#
-#     def get_context_data(self, *, object_list=None, **kwargs):
-#         context = super(RoomList, self).get_context_data(**kwargs)
-#         context['r_messages'] = Message.objects.all()
-#         # context['topics'] = Topic.objects.select_related('user')
-#         return context
 
 # Create your views here.
 
@@ -31,15 +21,16 @@ def login_page(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         try:
-            user = Profile.objects.get(username=username)
-        except Exception:
+            Profile.objects.get(username=username)
+        except ObjectDoesNotExist:
             messages.error(request, 'User does not exist')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('home')
         else:
-            messages.error(request, 'Username or password does not exist')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect('home')
+            else:
+                messages.error(request, 'Username or password does not exist')
     return render(request, 'login_register_reset/login.html')
 
 
@@ -131,19 +122,18 @@ def home(request):
 @login_required(login_url='/login')
 def room(request, pk):
     profile = Profile.objects.get(user=request.user)
-    room = Room.objects.select_related('host', 'topic').prefetch_related('participants').get(id=pk)
-    room_messages = room.message_set.select_related('user')  # Get messages specific only for this room
-    # participants = room.participants.all()
+    one_room = Room.objects.select_related('host', 'topic').prefetch_related('participants').get(id=pk)
+    room_messages = one_room.message_set.select_related('user')
     if request.method == "POST":
         Message.objects.create(
             user=profile,
-            room=room,
+            room=one_room,
             body=request.POST.get('body')
         )
-        room.participants.add(profile)
-        return redirect('room', pk=room.id)
+        one_room.participants.add(profile)
+        return redirect('room', pk=one_room.id)
     return render(request, 'base/room.html', context={
-        'room': room,
+        'room': one_room,
         'profile': profile,
         'r_messages': room_messages,
     })
@@ -155,7 +145,6 @@ def create_room(request):
     topics = Topic.objects.all()
     profile = Profile.objects.get(user=request.user)
     if request.method == 'POST':
-        # topics = request.POST.get('topic')
         topic, created = Topic.objects.get_or_create(name=request.POST.get('topic'), user=profile)
         a = Room.objects.create(
             host=profile,
@@ -167,11 +156,6 @@ def create_room(request):
             a.participants.add(profile)
             a.save()
 
-        # form = RoomForm(request.POST)
-        # if form.is_valid():
-        #     room = form.save(commit=False)
-        #     room.host = request.user
-        #     form.save()
         return redirect('home')
 
     return render(request, 'base/form_for_room.html', context={
@@ -183,37 +167,37 @@ def create_room(request):
 
 @login_required(login_url='/login')
 def update_room(request, pk):
-    room = Room.objects.get(id=pk)
-    form = RoomForm(instance=room)
+    one_room = Room.objects.get(id=pk)
+    form = RoomForm(instance=one_room)
     topics = Topic.objects.select_related('user')
-    if request.user.username != room.host.username:
+    if request.user.username != one_room.host.username:
         return HttpResponse('You are not allowed here!')
     if request.method == 'POST':
         topic_name = request.POST.get('topic')
         topic, created = Topic.objects.get_or_create(name=topic_name)
-        room.name = request.POST.get('name')
-        room.topic = topic
-        room.description = request.POST.get('description')
-        room.save()
+        one_room.name = request.POST.get('name')
+        one_room.topic = topic
+        one_room.description = request.POST.get('description')
+        one_room.save()
         return redirect('home')
     return render(request, 'base/form_for_room.html', context={
         'form': form,
         'topics': topics,
-        'room': room,
+        'room': one_room,
     })
 
 
 @login_required(login_url='/login')
 def delete_room(request, pk):
-    room = Room.objects.get(id=pk)
+    one_room = Room.objects.get(id=pk)
     profile = Profile.objects.get(username=request.user.username)
-    if request.user.username != room.host.username:
+    if request.user.username != one_room.host.username:
         return HttpResponse('You are not allowed here!')
     if request.method == 'POST':
-        room.delete()
+        one_room.delete()
         return redirect('home')
     return render(request, 'base/delete.html', context={
-        'obj': room,
+        'obj': one_room,
         'profile': profile
     })
 
@@ -227,28 +211,8 @@ class MessageDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         messages.success(self.request, 'The message was deleted successfully')
         return super(MessageDeleteView, self).form_valid(form)
 
-    # def get_success_url(self):
-    #     if 'room' in self.request.path:
-    #         return redirect('room', kwargs={'pk': self.object.room_id})
-    #     elif 'profile' in self.request.path:
-    #         return redirect('user-profile', kwargs={'pk': self.object.user})
-    #     else:
-    #         return reverse_lazy('home')
-
     def test_func(self):
         message = self.get_object()
         if self.request.user.id == message.user.id:
             return True
         return False
-
-# @login_required(login_url='/login')
-# def delete_message(request, pk):
-#     message = Message.objects.get(id=pk)
-#     if request.user != message.user:
-#         return HttpResponse('You are not allowed here!')
-#     if request.method == 'POST':
-#         message.delete()
-#         return redirect('room', message.room.id)
-#     return render(request, 'base/delete.html', context={
-#         'obj': message,
-#     })

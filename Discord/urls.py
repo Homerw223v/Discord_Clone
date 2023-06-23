@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('base.urls')),
     path('__debig__/', include('debug_toolbar.urls')),
+    path('api/v1/', include('base.api.urls')),
 ]
-if settings.DEBUG == True:
+if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
